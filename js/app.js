@@ -34,6 +34,7 @@ let currentAlertPt = null;
 let chatOpen     = false;
 let chatUnseen   = 0;
 let chatMsgCount = 0;
+let lastChatMsgs = [];
 
 const CHAT_DAILY_LIMIT = 15;
 const CHAT_LIMIT_KEY   = 'sunzha_chat_daily';
@@ -59,6 +60,13 @@ function fsDelete() { return DEMO_MODE ? FS_DELETE : firebase.firestore.FieldVal
 /* ══════════════════════════════════════════════════════
    СТАРТ — сразу без ввода имени
    ══════════════════════════════════════════════════════ */
+
+/* Перерисовывать чат при смене языка */
+const _origSetLang = setLang;
+window.setLang = function(lang) {
+  _origSetLang(lang);
+  renderChatMessages(lastChatMsgs);
+};
 
 document.addEventListener('DOMContentLoaded', () => {
   setLang(currentLang);
@@ -484,6 +492,7 @@ function renderChatMessages(msgs) {
   const container = document.getElementById('chat-messages');
   if (!container) return;
 
+  lastChatMsgs = msgs;
   const wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
 
   if (!chatOpen && msgs.length > chatMsgCount) {
