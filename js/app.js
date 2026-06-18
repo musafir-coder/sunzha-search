@@ -76,9 +76,15 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   if (!db) return;
   buildMap();
-  subscribeState();
-  subscribeChat();
+  ensureStateDoc().then(() => { subscribeState(); subscribeChat(); });
 });
+
+async function ensureStateDoc() {
+  if (DEMO_MODE) return;
+  try {
+    await stateRef().set({ pts: {}, alerts: {}, notice: '' }, { merge: true });
+  } catch(e) { console.error('ensureStateDoc', e); }
+}
 
 /* ══════════════════════════════════════════════════════
    КАРТА
@@ -319,15 +325,22 @@ async function claimPt(ptIdx) {
   try {
     freeSlot = await db.runTransaction(async tx => {
       const doc   = await tx.get(ref);
-      const pts   = doc.data()?.pts || {};
+      const pts   = doc.exists ? (doc.data()?.pts || {}) : {};
       const taken = new Set(Object.keys(pts[ptIdx] || {}).map(Number));
       let slot = -1;
       for (let s = 0; s < MAX_PER_PT; s++) { if (!taken.has(s)) { slot = s; break; } }
       if (slot === -1) throw Object.assign(new Error('full'), { code: 'full' });
-      tx.update(ref, {
-        [`pts.${ptIdx}.${slot}.n`]: myId,
-        [`pts.${ptIdx}.${slot}.t`]: serverTs()
-      });
+      if (doc.exists) {
+        tx.update(ref, {
+          [`pts.${ptIdx}.${slot}.n`]: myId,
+          [`pts.${ptIdx}.${slot}.t`]: serverTs()
+        });
+      } else {
+        tx.set(ref, {
+          pts: { [ptIdx]: { [slot]: { n: myId, t: serverTs() } } },
+          alerts: {}, notice: ''
+        });
+      }
       return slot;
     });
     myPtIdx = ptIdx; mySlotIdx = freeSlot;
@@ -373,7 +386,7 @@ async function sendSignal(type) {
     [`alerts.${key}.t`]:    serverTs()
   };
   try {
-    await stateRef().update(payload);
+    await stateRef().set(payload, { merge: true });
     showToast(t('t_signal_sent'), 'ok');
   } catch(e) { showToast(t('t_error'), 'warn'); }
 }
