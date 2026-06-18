@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0f172a">
+  <title>Поиск — Сунжа</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ═══ КАРТА ═══ -->
+  <div id="map"></div>
+
+  <!-- ═══ БАННЕР КООРДИНАТОРА ═══ -->
+  <div id="notice-banner" class="notice-banner hidden">
+    <span class="notice-icon">📢</span>
+    <span id="notice-text"></span>
+  </div>
+
+  <!-- ═══ ПАНЕЛЬ СТАТИСТИКИ ═══ -->
+  <div id="stats-panel" class="stats-panel">
+    <div class="stats-live">
+      <span class="stats-pulse"></span>
+      <span data-i18n="searching">ПОИСК ИДЁТ</span>
+    </div>
+    <div class="stats-row">
+      <div class="stats-item">
+        <span class="stats-num" id="stat-volunteers">0</span>
+        <span class="stats-label">
+          <span data-i18n="vol_label1">волонтёров</span><br>
+          <span data-i18n="vol_label2">на реке</span>
+        </span>
+      </div>
+      <div class="stats-divider"></div>
+      <div class="stats-item">
+        <span class="stats-num" id="stat-points">0</span>
+        <span class="stats-label">
+          <span data-i18n="pts_label1">точек</span><br>
+          <span data-i18n="pts_label2">прочёсывается</span>
+        </span>
+      </div>
+    </div>
+    <!-- Переключатель языка на карте -->
+    <div class="lang-switcher lang-switcher--map">
+      <button class="lang-btn active" data-lang="ing" onclick="setLang('ing')" title="ГIалгIайче">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/0/00/Flag_of_Ingushetia.svg" alt="Флаг Ингушетии">
+      </button>
+      <button class="lang-btn" data-lang="ru" onclick="setLang('ru')" title="Русский">
+        <svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg">
+          <rect width="30" height="6.67" fill="#fff"/>
+          <rect y="6.67" width="30" height="6.66" fill="#0039A6"/>
+          <rect y="13.33" width="30" height="6.67" fill="#D52B1E"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══ ПОДСКАЗКА МАСШТАБА ═══ -->
+  <div id="zoom-hint" class="zoom-hint hidden" data-i18n="zoom_hint">
+    Приблизьте карту (зум ≥ 15) чтобы увидеть точки
+  </div>
+
+  <!-- ═══ НИЖНЯЯ ШТОРКА (точка) ═══ -->
+  <div id="sector-panel" class="sector-panel hidden">
+    <div class="panel-drag-handle"></div>
+    <div id="panel-body"></div>
+  </div>
+
+  <!-- ═══ МОЯ ТОЧКА ═══ -->
+  <div id="my-bar" class="my-bar hidden">
+    <div class="my-bar-left">
+      <span class="my-bar-icon">📍</span>
+      <span id="my-bar-name">Точка #1</span>
+    </div>
+    <button id="leave-btn" class="btn btn-danger" data-i18n="leave_btn">Уйти</button>
+  </div>
+
+  <!-- ═══ МОЙ ID (нижний левый угол) ═══ -->
+  <div id="my-id-badge" class="my-id-badge">
+    <span data-i18n="my_id">Мой ID:</span> <strong id="my-id-val"></strong>
+  </div>
+
+  <!-- ═══ КНОПКА ЧАТА ═══ -->
+  <button id="chat-btn" class="chat-btn" onclick="toggleChat()" title="Чат">
+    💬
+    <span id="chat-badge" class="chat-badge hidden">0</span>
+  </button>
+
+  <!-- ═══ ПАНЕЛЬ ЧАТА ═══ -->
+  <div id="chat-panel" class="chat-panel hidden">
+    <div class="chat-panel-header">
+      <span class="chat-panel-title" data-i18n="chat_title">Чат поисковиков</span>
+      <button class="chat-close-btn" onclick="toggleChat()">✕</button>
+    </div>
+    <div id="chat-messages" class="chat-messages"></div>
+    <div class="chat-input-row">
+      <input type="text" id="chat-input" class="chat-input" data-i18n="chat_placeholder" maxlength="300" autocomplete="off">
+      <span id="chat-counter" class="chat-counter">15/15</span>
+      <button onclick="sendChatMsg()" class="btn btn-primary chat-send-btn">→</button>
+    </div>
+  </div>
+
+  <!-- ═══ КНОПКА ТРЕВОГИ ═══ -->
+  <button id="signal-btn" class="signal-btn" onclick="openSignalModal()" title="Сигнал">
+    🚨
+  </button>
+
+  <!-- ═══ МОДАЛЬНОЕ ОКНО СИГНАЛА ═══ -->
+  <div id="signal-modal" class="signal-modal hidden">
+    <div class="signal-modal-card">
+      <div class="signal-modal-title" data-i18n="signal_title">Отправить сигнал</div>
+      <p class="signal-modal-sub" data-i18n="signal_sub">Все участники поиска увидят оповещение</p>
+      <div class="signal-choices">
+        <button class="signal-choice signal-choice--found" onclick="sendSignal('found')">
+          <span class="signal-choice-icon">🔍</span>
+          <span class="signal-choice-label" data-i18n="sig_found">Нашёл что-то!</span>
+        </button>
+        <button class="signal-choice signal-choice--sos" onclick="sendSignal('sos')">
+          <span class="signal-choice-icon">🆘</span>
+          <span class="signal-choice-label" data-i18n="sig_sos">Нужна помощь!</span>
+        </button>
+      </div>
+      <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="closeSignalModal()" data-i18n="btn_close">Закрыть</button>
+    </div>
+  </div>
+
+  <!-- ═══ ОВЕРЛЕЙ ВХОДЯЩЕГО СИГНАЛА ═══ -->
+  <div id="alert-overlay" class="alert-overlay hidden">
+    <div class="alert-card" id="alert-card">
+      <div class="alert-icon" id="alert-icon">🔍</div>
+      <div class="alert-title" id="alert-title">НАЙДЕНО!</div>
+      <div class="alert-body" id="alert-body"></div>
+      <button class="btn btn-full alert-btn-go" id="alert-btn-go" onclick="goToAlert()">
+        <span id="alert-btn-go-text">Перейти к точке</span>
+      </button>
+      <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="dismissAlert()" data-i18n="btn_close">Закрыть</button>
+    </div>
+  </div>
+
+  <!-- ═══ ЛЕГЕНДА ═══ -->
+  <div class="legend">
+    <div class="legend-row"><span class="dot dot-free"></span><span data-i18n="leg_free">Свободно</span></div>
+    <div class="legend-row"><span class="dot dot-busy"></span><span data-i18n="leg_busy">Занято</span></div>
+    <div class="legend-row"><span class="dot dot-mine"></span><span data-i18n="leg_mine">Моя точка</span></div>
+  </div>
+
+  <!-- ═══ TOAST ═══ -->
+  <div id="toast" class="toast hidden" aria-live="polite"></div>
+
+  <!-- Leaflet -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+  <script src="js/config.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/river.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
