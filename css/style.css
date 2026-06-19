@@ -287,6 +287,7 @@ html, body { height: 100%; overflow: hidden;
 .chat-msg--mine .chat-msg-meta { flex-direction: row-reverse; }
 .chat-msg-sender { font-size: 11px; font-weight: 700; color: var(--accent); }
 .chat-msg--mine .chat-msg-sender { color: var(--mine); }
+.chat-msg-loc { font-weight: 400; opacity: 0.75; }
 .chat-msg-time   { font-size: 10px; color: var(--muted); }
 
 .chat-msg-text { padding: 9px 13px; font-size: 15px; line-height: 1.4;

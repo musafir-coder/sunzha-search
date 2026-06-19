@@ -40,6 +40,14 @@ let lastChatMsgs = [];
 const CHAT_DAILY_LIMIT = 15;
 const CHAT_LIMIT_KEY   = 'sunzha_chat_daily';
 
+function getMyLocation() {
+  if (myPtIdx === null) return null;
+  if (myPtIdx >= 2851 && myPtIdx <= 4269) return 'Карабулак';
+  if (myPtIdx >= 4270 && myPtIdx <= 4956) return 'Троицк';
+  if (myPtIdx >= 4957 && myPtIdx <= 6570) return 'Сунжа';
+  return null;
+}
+
 function chatUsage() {
   try {
     const today = new Date().toISOString().slice(0, 10);
@@ -533,8 +541,9 @@ async function sendChatMsg() {
   input.value = '';
   chatIncrement();
   updateChatCounter();
+  const loc = getMyLocation();
   try {
-    await db.collection('chat').add({ n: myId, text, t: serverTs() });
+    await db.collection('chat').add({ n: myId, text, t: serverTs(), ...(loc ? { loc } : {}) });
   } catch(e) { showToast(t('t_error'), 'warn'); }
 }
 
@@ -562,11 +571,15 @@ function renderChatMessages(msgs) {
     const time   = msg.t?.toDate?.() ?? (msg.t?._ms ? new Date(msg.t._ms) : null);
     const ts     = time ? time.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '';
 
+    const senderLabel = msg.loc
+      ? `${escHtml(msg.n)} <span class="chat-msg-loc">(${escHtml(msg.loc)})</span>`
+      : escHtml(msg.n);
+
     const div = document.createElement('div');
     div.className = `chat-msg ${isMine ? 'chat-msg--mine' : 'chat-msg--other'}`;
     div.innerHTML =
       `<div class="chat-msg-meta">` +
-        `<span class="chat-msg-sender">${escHtml(msg.n)}</span>` +
+        `<span class="chat-msg-sender">${senderLabel}</span>` +
         (ts ? `<span class="chat-msg-time">${ts}</span>` : '') +
       `</div>` +
       `<div class="chat-msg-text">${escHtml(msg.text)}</div>`;
