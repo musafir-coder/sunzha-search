@@ -56,6 +56,7 @@ html, body { height: 100%; overflow: hidden;
 .btn-primary { background: var(--accent); color: #fff; }
 .btn-danger  { background: var(--busy);   color: #fff; }
 .btn-success { background: var(--free);   color: #0f172a; }
+.btn-warning { background: var(--mine);  color: #0f172a; }
 .btn-ghost   { background: transparent; color: var(--muted); border: 1px solid var(--border); }
 .btn-full    { width: 100%; }
 
@@ -310,6 +311,35 @@ html, body { height: 100%; overflow: hidden;
   font-size: 15px; outline: none; transition: border-color .2s; }
 .chat-input:focus { border-color: var(--accent); }
 .chat-send-btn { min-width: 52px; padding: 12px; font-size: 18px; }
+
+/* ── Пин "Моя точка" на карте ── */
+.mine-pin-wrap {
+  width: 30px;
+  height: 40px;
+  position: relative;
+}
+.mine-pin {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  background: #f59e0b;
+  border: 3px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  top: 2px;
+  left: 4px;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.65), 0 0 0 2px rgba(245,158,11,0.4);
+}
+.mine-pin-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: #fff;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
 
 /* ── Адаптация для больших экранов ── */
 @media (min-width: 600px) {

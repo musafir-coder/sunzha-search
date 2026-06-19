@@ -28,6 +28,7 @@ let map        = null;
 let canvasRend = null;
 let markers    = [];
 let occupied   = {};
+let mineMarker = null;
 let seenAlerts = new Set(JSON.parse(localStorage.getItem('sunzha_seen') || '[]'));
 let currentAlertPt = null;
 
@@ -74,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (myPtIdx !== null) {
     const pts = getRiverPoints();
     if (pts[myPtIdx]) map.setView(pts[myPtIdx], SHOW_PTS_ZOOM, { animate: false });
+    addMineMarker(myPtIdx);
   }
   ensureStateDoc().then(() => { subscribeState(); subscribeChat(); });
 });
@@ -84,6 +86,36 @@ async function ensureStateDoc() {
     const doc = await stateRef().get();
     if (!doc.exists) await stateRef().set({ pts: {}, alerts: {}, notice: '' });
   } catch(e) { console.error('ensureStateDoc', e); }
+}
+
+/* ══════════════════════════════════════════════════════
+   ПИН МОЯ ТОЧКА
+   ══════════════════════════════════════════════════════ */
+
+function addMineMarker(idx) {
+  removeMineMarker();
+  if (!map) return;
+  const pts = getRiverPoints();
+  if (!pts[idx]) return;
+  const icon = L.divIcon({
+    className: '',
+    html: '<div class="mine-pin-wrap"><div class="mine-pin"><div class="mine-pin-dot"></div></div></div>',
+    iconSize: [30, 40],
+    iconAnchor: [15, 36]
+  });
+  mineMarker = L.marker(pts[idx], { icon, interactive: false, zIndexOffset: 1000 }).addTo(map);
+}
+
+function removeMineMarker() {
+  if (mineMarker && map) mineMarker.remove();
+  mineMarker = null;
+}
+
+function goToMyPt() {
+  closePanel();
+  if (myPtIdx === null) return;
+  const pts = getRiverPoints();
+  if (pts[myPtIdx]) map.setView(pts[myPtIdx], SHOW_PTS_ZOOM, { animate: true });
 }
 
 /* ══════════════════════════════════════════════════════
@@ -195,6 +227,7 @@ function subscribeState() {
           myPtIdx = null; mySlotIdx = null;
           localStorage.removeItem('sunzha_pt');
           localStorage.removeItem('sunzha_slot');
+          removeMineMarker();
           hideMySectorBar();
           showToast(t('t_auto_freed'), 'warn');
         } else {
@@ -231,6 +264,7 @@ async function freeStale(pts) {
           myPtIdx = null; mySlotIdx = null;
           localStorage.removeItem('sunzha_pt');
           localStorage.removeItem('sunzha_slot');
+          removeMineMarker();
           hideMySectorBar();
         }
       }
@@ -297,6 +331,7 @@ function openPanel(idx) {
     html += `<button class="btn btn-danger btn-full" onclick="leavePt()">${t('btn_leave')}</button>`;
   } else if (hasMy) {
     html += `<p class="panel-note">${t('already_on', myPtIdx + 1)}</p>`;
+    html += `<button class="btn btn-warning btn-full" onclick="goToMyPt()">📍 ${t('goto_my_pt')}</button>`;
   } else if (!isFull) {
     html += `<button class="btn btn-success btn-full" onclick="claimPt(${idx})">${t('btn_claim')}</button>`;
   } else {
@@ -349,6 +384,7 @@ async function claimPt(ptIdx) {
     closePanel();
     showMySectorBar(ptIdx);
     updateMarker(ptIdx);
+    addMineMarker(ptIdx);
     showToast(t('t_claimed', ptIdx + 1), 'ok');
   } catch (err) {
     if (err.code === 'full') { showToast(t('t_just_full'), 'warn'); closePanel(); }
@@ -364,6 +400,7 @@ async function leavePt() {
     myPtIdx = null; mySlotIdx = null;
     localStorage.removeItem('sunzha_pt');
     localStorage.removeItem('sunzha_slot');
+    removeMineMarker();
     hideMySectorBar(); closePanel(); updateMarker(ptIdx);
     showToast(t('t_freed'), 'ok');
   } catch (err) { showToast(t('t_error'), 'warn'); }
