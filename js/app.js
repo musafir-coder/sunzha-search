@@ -430,8 +430,14 @@ async function sendSignal(type) {
     [`alerts.${key}.type`]: type,
     [`alerts.${key}.t`]:    serverTs()
   };
+  const loc = getMyLocation();
   try {
     await stateRef().set(payload, { merge: true });
+    await db.collection('chat').add({
+      n: myId, text: '', t: serverTs(),
+      sig: type, pt: myPtIdx ?? null,
+      ...(loc ? { loc } : {})
+    });
     showToast(t('t_signal_sent'), 'ok');
   } catch(e) { showToast(t('t_error'), 'warn'); }
 }
@@ -567,22 +573,41 @@ function renderChatMessages(msgs) {
 
   container.innerHTML = '';
   msgs.forEach(msg => {
-    const isMine = msg.n === myId;
-    const time   = msg.t?.toDate?.() ?? (msg.t?._ms ? new Date(msg.t._ms) : null);
-    const ts     = time ? time.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '';
+    const time = msg.t?.toDate?.() ?? (msg.t?._ms ? new Date(msg.t._ms) : null);
+    const ts   = time ? time.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '';
+    const div  = document.createElement('div');
 
-    const senderLabel = msg.loc
-      ? `${escHtml(msg.n)} <span class="chat-msg-loc">(${escHtml(msg.loc)})</span>`
-      : escHtml(msg.n);
-
-    const div = document.createElement('div');
-    div.className = `chat-msg ${isMine ? 'chat-msg--mine' : 'chat-msg--other'}`;
-    div.innerHTML =
-      `<div class="chat-msg-meta">` +
-        `<span class="chat-msg-sender">${senderLabel}</span>` +
-        (ts ? `<span class="chat-msg-time">${ts}</span>` : '') +
-      `</div>` +
-      `<div class="chat-msg-text">${escHtml(msg.text)}</div>`;
+    if (msg.sig) {
+      const icon    = msg.sig === 'found' ? '🔍' : '🆘';
+      const title   = t(msg.sig === 'found' ? 'alert_found_title' : 'alert_sos_title');
+      const subText = t(msg.sig === 'found' ? 'sig_found' : 'sig_sos');
+      const ptStr   = msg.pt !== null && msg.pt !== undefined ? ` • ${t('point')} #${msg.pt + 1}` : '';
+      const locStr  = msg.loc ? ` (${escHtml(msg.loc)})` : '';
+      div.className = `chat-signal chat-signal--${msg.sig}`;
+      div.innerHTML =
+        `<div class="chat-signal-header">` +
+          `<span class="chat-signal-icon">${icon}</span>` +
+          `<span class="chat-signal-title">${escHtml(title)}</span>` +
+          (ts ? `<span class="chat-msg-time">${ts}</span>` : '') +
+        `</div>` +
+        `<div class="chat-signal-sub">${escHtml(subText)}</div>` +
+        `<div class="chat-signal-body">` +
+          `<span class="chat-signal-sender">${escHtml(msg.n)}${locStr}</span>` +
+          (ptStr ? `<span class="chat-signal-pt">${escHtml(ptStr)}</span>` : '') +
+        `</div>`;
+    } else {
+      const isMine = msg.n === myId;
+      const senderLabel = msg.loc
+        ? `${escHtml(msg.n)} <span class="chat-msg-loc">(${escHtml(msg.loc)})</span>`
+        : escHtml(msg.n);
+      div.className = `chat-msg ${isMine ? 'chat-msg--mine' : 'chat-msg--other'}`;
+      div.innerHTML =
+        `<div class="chat-msg-meta">` +
+          `<span class="chat-msg-sender">${senderLabel}</span>` +
+          (ts ? `<span class="chat-msg-time">${ts}</span>` : '') +
+        `</div>` +
+        `<div class="chat-msg-text">${escHtml(msg.text)}</div>`;
+    }
     container.appendChild(div);
   });
 

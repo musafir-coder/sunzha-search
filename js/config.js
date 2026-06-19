@@ -53,7 +53,7 @@ function _createLocalDB() {
   function _fireChat(cb) {
     const msgs = Object.entries(_loadChat())
       .sort(([,a],[,b]) => (a.t||0)-(b.t||0)).slice(-50)
-      .map(([id,v]) => ({ id, data: () => ({ n:v.n, text:v.text, t:_toTs(v.t) }) }));
+      .map(([id,v]) => ({ id, data: () => ({ n:v.n, text:v.text, t:_toTs(v.t), sig:v.sig, pt:v.pt, loc:v.loc }) }));
     try { cb({ forEach: fn => msgs.forEach(fn) }); } catch(e) {}
   }
   function _notifyChat() { _chatCbs.forEach(cb => _fireChat(cb)); }
@@ -147,7 +147,11 @@ function _createLocalDB() {
       if (col === 'chat') return {
         add: async (msg) => {
           const c = _loadChat();
-          c[`m_${_now()}_${Math.random().toString(36).slice(2,5)}`] = { n:msg.n, text:msg.text, t:_tsMs(msg.t) };
+          const entry = { n: msg.n, text: msg.text, t: _tsMs(msg.t) };
+          if (msg.sig) entry.sig = msg.sig;
+          if (msg.pt !== undefined && msg.pt !== null) entry.pt = msg.pt;
+          if (msg.loc) entry.loc = msg.loc;
+          c[`m_${_now()}_${Math.random().toString(36).slice(2,5)}`] = entry;
           _saveChat(c); _notifyChat();
         },
         orderBy: () => ({ limitToLast: () => ({

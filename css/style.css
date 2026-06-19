@@ -300,6 +300,22 @@ html, body { height: 100%; overflow: hidden;
 .chat-empty { color: var(--muted); font-size: 14px; text-align: center;
   margin: auto; padding: 20px; line-height: 1.6; }
 
+/* ── Сигнал в чате ── */
+.chat-signal { border-radius: 10px; padding: 10px 14px;
+  display: flex; flex-direction: column; gap: 3px; }
+.chat-signal--found { background: rgba(251,146,60,.13); border: 1.5px solid rgba(251,146,60,.45); }
+.chat-signal--sos   { background: rgba(239,68,68,.13);  border: 1.5px solid rgba(239,68,68,.45); }
+.chat-signal-header { display: flex; align-items: center; gap: 7px; }
+.chat-signal-icon   { font-size: 18px; flex-shrink: 0; }
+.chat-signal-title  { font-size: 14px; font-weight: 800; flex: 1; letter-spacing: .03em; }
+.chat-signal--found .chat-signal-title { color: #fb923c; }
+.chat-signal--sos   .chat-signal-title { color: var(--busy); }
+.chat-signal-sub    { font-size: 12px; color: var(--muted); padding-left: 25px; }
+.chat-signal-body   { display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  padding-left: 25px; margin-top: 1px; }
+.chat-signal-sender { font-size: 12px; font-weight: 700; color: var(--text); }
+.chat-signal-pt     { font-size: 12px; color: var(--muted); }
+
 .chat-counter { font-size: 11px; font-weight: 600; color: var(--muted);
   align-self: center; white-space: nowrap; flex-shrink: 0; }
 .chat-counter--low { color: var(--busy); }
