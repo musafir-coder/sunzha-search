@@ -32,12 +32,13 @@ let mineMarker = null;
 let seenAlerts = new Set(JSON.parse(localStorage.getItem('sunzha_seen') || '[]'));
 let currentAlertPt = null;
 
-let chatOpen     = false;
-let chatUnseen   = 0;
-let chatMsgCount = 0;
-let lastChatMsgs = [];
+let chatOpen        = false;
+let chatUnseen      = 0;
+let chatMsgCount    = 0;
+let lastChatMsgs    = [];
+let chatUnsubscribe = null;
 
-const CHAT_DAILY_LIMIT = 15;
+const CHAT_DAILY_LIMIT = 5;
 const CHAT_LIMIT_KEY   = 'sunzha_chat_daily';
 
 function getMyLocation() {
@@ -85,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (pts[myPtIdx]) map.setView(pts[myPtIdx], SHOW_PTS_ZOOM, { animate: false });
     addMineMarker(myPtIdx);
   }
-  ensureStateDoc().then(() => { subscribeState(); subscribeChat(); });
+  ensureStateDoc().then(() => { subscribeState(); });
 });
 
 async function ensureStateDoc() {
@@ -515,12 +516,17 @@ function escHtml(s) {
    ══════════════════════════════════════════════════════ */
 
 function subscribeChat() {
+  if (chatUnsubscribe) return;
   const onSnap = snap => {
     const msgs = [];
     snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
     renderChatMessages(msgs);
   };
-  db.collection('chat').orderBy('t').limitToLast(50).onSnapshot(onSnap, err => console.error('chat', err));
+  chatUnsubscribe = db.collection('chat').orderBy('t').limitToLast(25).onSnapshot(onSnap, err => console.error('chat', err));
+}
+
+function unsubscribeChat() {
+  if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
 }
 
 function toggleChat() {
@@ -531,11 +537,14 @@ function toggleChat() {
     chatUnseen = 0;
     updateChatBadge();
     updateChatCounter();
+    subscribeChat();
     setTimeout(() => {
       const msgs = document.getElementById('chat-messages');
       msgs.scrollTop = msgs.scrollHeight;
       document.getElementById('chat-input').focus();
     }, 50);
+  } else {
+    unsubscribeChat();
   }
 }
 
