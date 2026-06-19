@@ -76,6 +76,10 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   if (!db) return;
   buildMap();
+  if (myPtIdx !== null) {
+    const pts = getRiverPoints();
+    if (pts[myPtIdx]) map.setView(pts[myPtIdx], SHOW_PTS_ZOOM, { animate: false });
+  }
   ensureStateDoc().then(() => { subscribeState(); subscribeChat(); });
 });
 
