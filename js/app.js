@@ -86,7 +86,8 @@ document.addEventListener('DOMContentLoaded', () => {
 async function ensureStateDoc() {
   if (DEMO_MODE) return;
   try {
-    await stateRef().set({ pts: {}, alerts: {}, notice: '' }, { merge: true });
+    const doc = await stateRef().get();
+    if (!doc.exists) await stateRef().set({ pts: {}, alerts: {}, notice: '' });
   } catch(e) { console.error('ensureStateDoc', e); }
 }
 
@@ -279,7 +280,7 @@ function openPanel(idx) {
   } else if (isFull) {
     html += `<div class="status-badge full">${t('badge_full')} — ${cnt}/${MAX_PER_PT}</div>`;
   } else {
-    html += `<div class="status-badge partial">${t('badge_partial')} — ${cnt} из ${MAX_PER_PT}</div>`;
+    html += `<div class="status-badge partial">${t('badge_partial')} — ${cnt}/${MAX_PER_PT}</div>`;
   }
 
   if (cnt > 0) {
