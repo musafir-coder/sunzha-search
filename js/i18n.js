@@ -118,4 +118,5 @@ function setLang(lang) {
   document.querySelectorAll('.lang-btn').forEach(btn =>
     btn.classList.toggle('active', btn.dataset.lang === lang)
   );
+  if (typeof window._onAfterSetLang === 'function') window._onAfterSetLang(lang);
 }

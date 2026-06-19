@@ -61,12 +61,7 @@ function fsDelete() { return DEMO_MODE ? FS_DELETE : firebase.firestore.FieldVal
    СТАРТ — сразу без ввода имени
    ══════════════════════════════════════════════════════ */
 
-/* Перерисовывать чат при смене языка */
-const _origSetLang = setLang;
-window.setLang = function(lang) {
-  _origSetLang(lang);
-  renderChatMessages(lastChatMsgs);
-};
+window._onAfterSetLang = () => renderChatMessages(lastChatMsgs);
 
 document.addEventListener('DOMContentLoaded', () => {
   setLang(currentLang);
